@@ -8,6 +8,7 @@ readme = "README.md"
 keywords = ["commutative","diagrams","algebra","proofs","testing"]
 categories = ["mathematics"]
 repository = "https://github.com/maxsnijders/commuter"
-author = "Max Snijders"
+authors = ["Max Snijders"]
 
 [dependencies]
+itertools = "0.10.5"
