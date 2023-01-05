@@ -1,3 +1,6 @@
+pub mod graph;
+pub mod diagram;
+
 pub fn add(left: usize, right: usize) -> usize {
     left + right
 }
