@@ -1,0 +1,13 @@
+[package]
+name = "commuter"
+version = "0.1.0"
+edition = "2021"
+license-file = "LICENSE"
+description = "Provides tooling to test diagrams for commutativity, allowing automated tests on algebraic systems."
+readme = "README.md"
+keywords = ["commutative","diagrams","algebra","proofs","testing"]
+categories = ["mathematics"]
+repository = "https://github.com/maxsnijders/commuter"
+author = "Max Snijders"
+
+[dependencies]
