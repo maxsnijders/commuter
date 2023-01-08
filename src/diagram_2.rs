@@ -11,35 +11,43 @@ trait Element: Clone {
     fn name(&self) -> String;
 }
 
-trait Set {
+trait SetLike {
     fn elements(&self) -> Box<dyn Iterator<Item = Rc<dyn Element>>>;
+}
+
+#[derive(Clone)]
+struct Set<T>
+where
+    T: Clone + Element + Sized,
+{
+    elements: Vec<T>,
+}
+
+impl<T> Set<T>
+where
+    T: Clone + Element + Sized,
+{
+    pub fn new(elements: Vec<T>) -> Rc<Set<T>> {
+        Rc::new(Self { elements })
+    }
+}
+
+impl<T> SetLike for Set<T>
+where
+    T: Clone + Element + Sized + 'static,
+{
+    fn elements(&self) -> Box<dyn Iterator<Item = Rc<dyn Element>>> {
+        let owned_els = self.elements.clone();
+        Box::new(
+            owned_els
+                .into_iter()
+                .map(|e| Rc::new(e.clone()) as Rc<dyn Element>),
+        )
+    }
 }
 
 trait Mappable {
     fn map(&self, key: &Rc<dyn Element>) -> Option<Rc<dyn Element>>;
-}
-
-struct Map {
-    from: usize, 
-    to: usize, 
-    map: Rc<dyn Mappable>,
-    name: String,
-}
-
-impl Map {
-    pub fn new<F, U, V> (from: usize, to: usize, map: F, name: String) -> Map where F: Fn(&U) -> V, U: Clone + PartialEq{
-        Map {
-            from: from,
-            to: to,
-            map: ValueMap::new(map),
-            name: name,
-        }
-    }
-}
-
-pub struct Diagram {
-    sets: Vec<Rc<dyn Set>>,
-    maps: Vec<Map> // (usize, usize, Rc<dyn Mappable>, String)>,
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -75,16 +83,97 @@ impl DiGraph for Diagram {
             .maps
             .iter()
             .enumerate()
-            .filter(move |(_ix, Map{from, to, map, name})| from == node)
-            .map(|(ix, Map{from, to, map, name})| DiEdge {
-                from: *from,
-                to: *to,
-                ix: ix,
-            })
+            .filter(
+                move |(
+                    _ix,
+                    Map {
+                        from,
+                        to: _,
+                        map: _,
+                        name: _,
+                    },
+                )| from == node,
+            )
+            .map(
+                |(
+                    ix,
+                    Map {
+                        from,
+                        to,
+                        map: _,
+                        name: _,
+                    },
+                )| DiEdge {
+                    from: *from,
+                    to: *to,
+                    ix: ix,
+                },
+            )
             .collect();
 
         Box::new(result.into_iter())
     }
+}
+
+struct ValueMap<T, U> {
+    map: Rc<dyn Fn(&T) -> U>,
+}
+
+impl<T, U> Mappable for ValueMap<T, U>
+where
+    T: Element + 'static,
+    U: Element + 'static,
+{
+    fn map(&self, key: &Rc<dyn Element>) -> Option<Rc<dyn Element>> {
+        if let Some(key) = key.as_any().downcast_ref::<T>() {
+            Some(Rc::new((self.map)(key)))
+        } else {
+            None
+        }
+    }
+}
+
+impl<T, U> ValueMap<T, U>
+where
+    T: Element + 'static,
+    U: Element + 'static,
+{
+    pub fn new<M>(map: M) -> Rc<ValueMap<T, U>>
+    where
+        M: Fn(&T) -> U + 'static,
+    {
+        Rc::new(ValueMap {
+            map: Rc::new(move |x| map(x)),
+        })
+    }
+}
+
+struct Map {
+    from: usize,
+    to: usize,
+    map: Rc<dyn Mappable>,
+    name: String,
+}
+
+impl Map {
+    pub fn new<F, U, V>(from: usize, to: usize, map: F, name: String) -> Map
+    where
+        F: Fn(&U) -> V + 'static + Clone,
+        U: Clone + PartialEq + core::fmt::Debug + 'static,
+        V: Clone + PartialEq + core::fmt::Debug + 'static,
+    {
+        Map {
+            from: from,
+            to: to,
+            map: ValueMap::new(map.clone()),
+            name: name,
+        }
+    }
+}
+
+pub struct Diagram {
+    sets: Vec<Rc<dyn SetLike>>,
+    maps: Vec<Map>, // (usize, usize, Rc<dyn Mappable>, String)>,
 }
 
 pub enum CommutativeDiagramResult {
@@ -134,17 +223,13 @@ pub fn diagram_commutes(diagram: &Diagram) -> Result<CommutativeDiagramResult, C
                         // Get descriptions for both paths
                         let path_a_description = path_a
                             .iter()
-                            .map(|edge| {
-                                diagram.maps[edge.ix].name.clone()
-                            })
+                            .map(|edge| diagram.maps[edge.ix].name.clone())
                             .collect::<Vec<String>>()
                             .join(" -> ");
 
                         let path_b_description = path_b
                             .iter()
-                            .map(|edge| {
-                                diagram.maps[edge.ix].name.clone()
-                            })
+                            .map(|edge| diagram.maps[edge.ix].name.clone())
                             .collect::<Vec<String>>()
                             .join(" -> ");
 
@@ -171,34 +256,34 @@ pub fn diagram_commutes(diagram: &Diagram) -> Result<CommutativeDiagramResult, C
     Ok(CommutativeDiagramResult::Commutes)
 }
 
-#[derive(Clone, Copy, PartialEq)]
-struct TypeElement<T>
-where
-    T: Clone + PartialEq + Sized,
-{
-    value: T,
-}
+// #[derive(Clone, Copy, PartialEq)]
+// struct TypeElement<T>
+// where
+//     T: Clone + PartialEq + Sized,
+// {
+//     value: T,
+// }
 
-impl<T> Element for TypeElement<T>
-where
-    T: Clone + PartialEq + Sized + 'static + core::fmt::Debug,
-{
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
+// impl<T> Element for TypeElement<T>
+// where
+//     T: Clone + PartialEq + Sized + 'static + core::fmt::Debug,
+// {
+//     fn as_any(&self) -> &dyn Any {
+//         self
+//     }
 
-    fn eq(&self, other: &Rc<dyn Element>) -> bool {
-        if let Some(other) = other.as_any().downcast_ref::<TypeElement<T>>() {
-            self.value == other.value
-        } else {
-            false
-        }
-    }
+//     fn eq(&self, other: &Rc<dyn Element>) -> bool {
+//         if let Some(other) = other.as_any().downcast_ref::<TypeElement<T>>() {
+//             self.value == other.value
+//         } else {
+//             false
+//         }
+//     }
 
-    fn name(&self) -> String {
-        format!("{:?}", self.value)
-    }
-}
+//     fn name(&self) -> String {
+//         format!("{:?}", self.value)
+//     }
+// }
 
 impl<T> Element for T
 where
@@ -221,70 +306,6 @@ where
     }
 }
 
-#[derive(Clone)]
-struct TypeSet<T>
-where
-    T: Clone + Element + Sized,
-{
-    elements: Vec<T>,
-}
-
-impl<T> TypeSet<T>
-where
-    T: Clone + Element + Sized,
-{
-    pub fn new(elements: Vec<T>) -> Rc<TypeSet<T>> {
-        Rc::new(Self { elements })
-    }
-}
-
-impl<T> Set for TypeSet<T>
-where
-    T: Clone + Element + Sized + 'static,
-{
-    fn elements(&self) -> Box<dyn Iterator<Item = Rc<dyn Element>>> {
-        let owned_els = self.elements.clone();
-        Box::new(
-            owned_els
-                .into_iter()
-                .map(|e| Rc::new(e.clone()) as Rc<dyn Element>),
-        )
-    }
-}
-
-struct ValueMap<T, U> {
-    map: Rc<dyn Fn(&T) -> U>,
-}
-
-impl<T, U> Mappable for ValueMap<T, U>
-where
-    T: Element + 'static,
-    U: Element + 'static,
-{
-    fn map(&self, key: &Rc<dyn Element>) -> Option<Rc<dyn Element>> {
-        if let Some(key) = key.as_any().downcast_ref::<T>() {
-            Some(Rc::new((self.map)(key)))
-        } else {
-            None
-        }
-    }
-}
-
-impl<T, U> ValueMap<T, U>
-where
-    T: Element + 'static,
-    U: Element + 'static,
-{
-    pub fn new<M>(map: M) -> Rc<ValueMap<T, U>>
-    where
-        M: Fn(&T) -> U + 'static,
-    {
-        Rc::new(ValueMap {
-            map: Rc::new(move |x| map(x)),
-        })
-    }
-}
-
 #[cfg(test)]
 mod tests {
 
@@ -296,49 +317,37 @@ mod tests {
 
         let generating_integers: Vec<i32> = (0..20).collect();
 
+        let left_add = |(a, b, c): &(i32, i32, i32)| (a + b, *c);
+        let right_add = |(a, b, c): &(i32, i32, i32)| (*a, b + c);
+
         // Build the sets (triplets, pairs, integers) so that summing operations can be well-defined later
-        let triplets: Vec<(i32, i32, i32)> = generating_integers
+        let triplets: Vec<(i32, i32, i32)> = (generating_integers)
             .clone()
             .iter()
             .cartesian_product(generating_integers.clone())
             .cartesian_product(generating_integers.clone().iter())
             .map(|((a, b), c)| (*a, b, *c))
             .collect();
-        let pairs: Vec<(i32, i32)> = (0..40).cartesian_product(0..40).collect();
-        let integers: Vec<i32> = (0..80).collect();
-
-        let triplets = TypeSet::new(triplets);
-        let pairs = TypeSet::new(pairs);
-        let integers = TypeSet::new(integers);
+        let pairs: Vec<(i32, i32)> = triplets
+            .clone()
+            .iter()
+            .map(left_add)
+            .chain(triplets.clone().iter().map(right_add))
+            .collect();
+        let integers: Vec<i32> = pairs.iter().map(|(a, b)| a + b).collect();
 
         let diagram = Diagram {
-            sets: vec![triplets, pairs.clone(), pairs, integers],
+            sets: vec![
+                Set::new(triplets),
+                Set::new(pairs.clone()),
+                Set::new(pairs),
+                Set::new(integers),
+            ],
             maps: vec![
-                Map::new(
-                    0,
-                    1,
-                    ValueMap::new(|(a, b, c): &(i32, i32, i32)| (a + b, *c)),
-                    "(+,id)".to_owned(),
-                ),
-                Map::new(
-                    0,
-                    2,
-                    ValueMap::new(|(a, b, c): &(i32, i32, i32)| (*a, b + c)),
-                    "(id,+)".to_owned(),
-                ),
-                Map::new
-                (
-                    2,
-                    3,
-                    ValueMap::new(|(a, b): &(i32, i32)| a + b),
-                    "(+)".to_owned(),
-                ),
-                Map::new(
-                    1,
-                    3,
-                    ValueMap::new(|(a, b): &(i32, i32)| a + b),
-                    "(+)".to_owned(),
-                ),
+                Map::new(0, 1, left_add, "(+,id)".to_owned()),
+                Map::new(0, 2, right_add, "(id,+)".to_owned()),
+                Map::new(2, 3, |(a, b): &(i32, i32)| a + b, "(+)".to_owned()),
+                Map::new(1, 3, |(a, b): &(i32, i32)| a + b, "(+)".to_owned()),
             ],
         };
 
@@ -347,4 +356,9 @@ mod tests {
             CommutativeDiagramResult::DoesNotCommute(reason) => panic!("{}", reason),
         });
     }
+
+    // #[test]
+    // fn vector_concatenation_is_associative_on_integers () {
+
+    // }
 }
