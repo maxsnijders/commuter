@@ -27,11 +27,11 @@ struct Map {
 }
 
 impl Map {
-    pub fn new (from: usize, to: usize, map: Rc<dyn Mappable>, name: String) -> Map {
+    pub fn new<F, U, V> (from: usize, to: usize, map: F, name: String) -> Map where F: Fn(&U) -> V, U: Clone + PartialEq{
         Map {
             from: from,
             to: to,
-            map: map,
+            map: ValueMap::new(map),
             name: name,
         }
     }
