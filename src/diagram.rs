@@ -15,7 +15,7 @@ struct Map {
     from: usize,
     to: usize,
     map: Box<dyn Fn(usize) -> usize>,
-    name: &'static str
+    name: &'static str,
 }
 
 pub struct Diagram {
@@ -68,10 +68,9 @@ impl DiGraph for Diagram {
     }
 }
 
-
 pub enum CommutativeDiagramResult {
     Commutes,
-    DoesNotCommute(String)
+    DoesNotCommute(String),
 }
 
 pub fn diagram_commutes(diagram: &Diagram) -> Result<CommutativeDiagramResult, CyclicGraphError> {
@@ -81,7 +80,6 @@ pub fn diagram_commutes(diagram: &Diagram) -> Result<CommutativeDiagramResult, C
     // For each pair of paths...
     for path_a in &all_possible_paths.clone() {
         for path_b in &all_possible_paths.clone() {
-
             // Check if these two paths match
             if path_a.first().map(|e| e.from()) == path_b.first().map(|e| e.from())
                 && path_a.last().map(|e| e.to()) == path_b.last().map(|e| e.to())
@@ -114,7 +112,6 @@ pub fn diagram_commutes(diagram: &Diagram) -> Result<CommutativeDiagramResult, C
 
                     // Now, check if the two elements are equal
                     if !(target_set.eq)(path_a_element, path_b_element) {
-
                         // Get descriptions for both paths
                         let path_a_description = path_a
                             .iter()
@@ -132,9 +129,16 @@ pub fn diagram_commutes(diagram: &Diagram) -> Result<CommutativeDiagramResult, C
                         let left_final_element_name = (target_set.element_name)(path_a_element);
                         let right_final_element_name = (target_set.element_name)(path_b_element);
 
-                        let reason = format!("{} and {} don't agree on {}. Left gets {} while right gets {}", path_a_description, path_b_description, element_name, left_final_element_name, right_final_element_name);
+                        let reason = format!(
+                            "{} and {} don't agree on {}. Left gets {} while right gets {}",
+                            path_a_description,
+                            path_b_description,
+                            element_name,
+                            left_final_element_name,
+                            right_final_element_name
+                        );
 
-                        return Ok(CommutativeDiagramResult::DoesNotCommute(reason))
+                        return Ok(CommutativeDiagramResult::DoesNotCommute(reason));
                     }
                 }
             }
@@ -151,74 +155,90 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_addition_is_associative_on_integers () {
+    fn test_addition_is_associative_on_integers() {
         use itertools::Itertools;
 
         // Build the full diagram
         let diagram_factory = |left_offset: i32| {
-                let generating_integers: Vec<i32> = (0..20).collect();
-            
-                // Build the sets (triplets, pairs, integers) so that summing operations can be well-defined later
-                let triplets: Vec<(i32, i32, i32)> = generating_integers.clone().iter().cartesian_product(generating_integers.clone()).cartesian_product(generating_integers.clone().iter()).map(|((a, b), c)| (*a, b, *c)).collect();
-                let pairs: Vec<(i32, i32)> = (0..40).cartesian_product(0..40).collect();
-                let integers: Vec<i32> = (0..80).collect();
-        
-                // Map each downstream map back to their positions in the sets 
-                let pair_positions: HashMap<(i32, i32), usize> = pairs.clone().iter().enumerate().map(|(ix, i)| (*i, ix)).collect();
-                let integer_positions: HashMap<i32, usize> = integers.clone().iter().enumerate().map(|(ix, i)| (*i, ix)).collect();
-        
-                // Build moveable copies so we can use them in the diagram
-                let triplets_1 = triplets.clone();
-                let pair_positions_1 = pair_positions.clone();
-                let pairs_1 = pairs.clone();
-                let integer_positions_1 = integer_positions.clone();
-        
-                let triplets_2 = triplets.clone();
-                let pairs_2 = pairs.clone();
-                let pairs_3 = pairs.clone();
-                let integers_1 = integers.clone();
-                
-                Diagram{
+            let generating_integers: Vec<i32> = (0..20).collect();
+
+            // Build the sets (triplets, pairs, integers) so that summing operations can be well-defined later
+            let triplets: Vec<(i32, i32, i32)> = generating_integers
+                .clone()
+                .iter()
+                .cartesian_product(generating_integers.clone())
+                .cartesian_product(generating_integers.clone().iter())
+                .map(|((a, b), c)| (*a, b, *c))
+                .collect();
+            let pairs: Vec<(i32, i32)> = (0..40).cartesian_product(0..40).collect();
+            let integers: Vec<i32> = (0..80).collect();
+
+            // Map each downstream map back to their positions in the sets
+            let pair_positions: HashMap<(i32, i32), usize> = pairs
+                .clone()
+                .iter()
+                .enumerate()
+                .map(|(ix, i)| (*i, ix))
+                .collect();
+            let integer_positions: HashMap<i32, usize> = integers
+                .clone()
+                .iter()
+                .enumerate()
+                .map(|(ix, i)| (*i, ix))
+                .collect();
+
+            // Build moveable copies so we can use them in the diagram
+            let triplets_1 = triplets.clone();
+            let pair_positions_1 = pair_positions.clone();
+            let pairs_1 = pairs.clone();
+            let integer_positions_1 = integer_positions.clone();
+
+            let triplets_2 = triplets.clone();
+            let pairs_2 = pairs.clone();
+            let pairs_3 = pairs.clone();
+            let integers_1 = integers.clone();
+
+            Diagram {
                 sets: vec![
-                    Set{
+                    Set {
                         elements: (0..triplets.len()).collect(),
                         eq: Box::new(|a, b| a == b),
                         name: "triplets",
                         element_name: Box::new(move |triplet_ix| {
                             let (a, b, c) = triplets_2[triplet_ix];
                             format!("({}, {}, {})", a, b, c)
-                        })
+                        }),
                     },
-                    Set{
+                    Set {
                         elements: (0..pairs.len()).collect(),
                         eq: Box::new(|a, b| a == b),
                         name: "pairs",
                         element_name: Box::new(move |pair_ix| {
                             let (a, b) = pairs_2[pair_ix];
                             format!("({}, {})", a, b)
-                        })
+                        }),
                     },
-                    Set{
+                    Set {
                         elements: (0..pairs.len()).collect(),
                         eq: Box::new(|a, b| a == b),
                         name: "pairs",
                         element_name: Box::new(move |pair_ix| {
                             let (a, b) = pairs_3[pair_ix];
                             format!("({}, {})", a, b)
-                        })
+                        }),
                     },
-                    Set{
+                    Set {
                         elements: (0..integers.len()).collect(),
                         eq: Box::new(|a, b| a == b),
                         name: "pairs",
                         element_name: Box::new(move |integer_ix| {
                             let a = integers_1[integer_ix];
                             format!("{}", a)
-                        })
-                    }
+                        }),
+                    },
                 ],
                 maps: vec![
-                    Map{
+                    Map {
                         from: 0,
                         to: 1,
                         map: Box::new(move |triplet_ix| {
@@ -231,9 +251,9 @@ mod tests {
 
                             pair_positions_1[&pair]
                         }),
-                        name: "(+,)"
+                        name: "(+,)",
                     },
-                    Map{
+                    Map {
                         from: 0,
                         to: 2,
                         map: Box::new(move |triplet_ix| {
@@ -242,9 +262,9 @@ mod tests {
 
                             pair_positions[&pair]
                         }),
-                        name: "(,+)"
+                        name: "(,+)",
                     },
-                    Map{
+                    Map {
                         from: 1,
                         to: 3,
                         map: Box::new(move |pair_ix| {
@@ -252,9 +272,9 @@ mod tests {
 
                             integer_positions_1[&(a + b)]
                         }),
-                        name: "+"
+                        name: "+",
                     },
-                    Map{
+                    Map {
                         from: 2,
                         to: 3,
                         map: Box::new(move |pair_ix| {
@@ -262,9 +282,9 @@ mod tests {
 
                             integer_positions[&(a + b)]
                         }),
-                        name: "+"
-                    }
-                ]
+                        name: "+",
+                    },
+                ],
             }
         };
 
@@ -273,62 +293,64 @@ mod tests {
         // And confirm that integer addition is associative
         assert!(match diagram_commutes(&commutative_diagram).unwrap() {
             CommutativeDiagramResult::Commutes => true,
-            CommutativeDiagramResult::DoesNotCommute(reason) => panic!("{}", reason)
+            CommutativeDiagramResult::DoesNotCommute(reason) => panic!("{}", reason),
         });
 
         let non_commutative_diagram = diagram_factory(1);
         assert!(match diagram_commutes(&non_commutative_diagram).unwrap() {
             CommutativeDiagramResult::Commutes => false,
-            CommutativeDiagramResult::DoesNotCommute(..) => true
+            CommutativeDiagramResult::DoesNotCommute(..) => true,
         });
-
     }
 
     #[test]
-    fn test_diagram_build(){
-        let d = Diagram{
+    fn test_diagram_build() {
+        let d = Diagram {
             sets: vec![
-                Set{
+                Set {
                     elements: vec![0, 1, 2],
                     eq: Box::new(|a, b| a == b),
                     name: "[0, 1, 2]",
                     element_name: Box::new(|a| a.to_string()),
                 },
-                Set{
+                Set {
                     elements: vec![0, 2],
                     eq: Box::new(|a, b| a == b),
                     name: "[0, 2]",
                     element_name: Box::new(|a| a.to_string()),
                 },
-                Set{
+                Set {
                     elements: vec![0],
                     eq: Box::new(|a, b| a == b),
                     name: "[0]",
                     element_name: Box::new(|a| a.to_string()),
-                }
+                },
             ],
             maps: vec![
-                Map{
+                Map {
                     from: 0,
                     to: 1,
                     map: Box::new(|a| a / 2),
-                    name: "/2"
+                    name: "/2",
                 },
-                Map{
+                Map {
                     from: 1,
                     to: 2,
                     map: Box::new(|a| a / 2),
-                    name: "/2"
+                    name: "/2",
                 },
-                Map{
+                Map {
                     from: 0,
                     to: 2,
                     map: Box::new(|_| 0),
-                    name: "0"
+                    name: "0",
                 },
             ],
         };
 
-        assert!(matches!(diagram_commutes(&d).unwrap(), CommutativeDiagramResult::Commutes));
+        assert!(matches!(
+            diagram_commutes(&d).unwrap(),
+            CommutativeDiagramResult::Commutes
+        ));
     }
 }

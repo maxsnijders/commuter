@@ -11,4 +11,5 @@ repository = "https://github.com/maxsnijders/commuter"
 authors = ["Max Snijders"]
 
 [dependencies]
+dyn-clone = "1.0.10"
 itertools = "0.10.5"
