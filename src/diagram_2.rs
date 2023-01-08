@@ -90,19 +90,20 @@ fn diagram_commutes(diagram: &Diagram) ->  Result<CommutativeDiagramResult, Cycl
 
                 // Now, map this source set through both of the paths
                 for element in source_set.elements() {
-                    let mut path_a_element = &element; // dyn_clone::clone_box(&*element);
+                    let mut path_a_element = dyn_clone::clone_box(&*element); 
 
                     for edge in path_a {
                         let (_, _, map, name) = &diagram.maps[edge.ix];
-                        let x = map.map(path_a_element);
-                        path_a_element = &(x.unwrap());
+                        let x = map.map(path_a_element).unwrap();
+                        path_a_element = x;
                     }
 
-                    let mut path_b_element = &element; // dyn_clone::clone_box(&*element);
+                    let mut path_b_element = dyn_clone::clone_box(&*element);
 
                     for edge in path_b {
                         let (_, _, map, name) = &diagram.maps[edge.ix];
-                        path_b_element = &map.map(path_b_element).unwrap();
+                        let y = map.map(path_b_element).unwrap();
+                        path_b_element = y
                     }
 
                     // Now, check if the two elements are equal
