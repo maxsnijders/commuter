@@ -1,9 +1,9 @@
 //! Diagram - the main logic for this package
-//! 
-//! 
+//!
+//!
 //! Allows verification of commutativity on diagrams with given sets of elements and maps
 //! Example:
-//! 
+//!
 //! ```
 //! use itertools::Itertools;
 //! use commuter::diagram::{Diagram, Set, Map, diagram_commutes, CommutativeDiagramResult};
@@ -42,8 +42,8 @@
 //!     CommutativeDiagramResult::Commutes => true,
 //!     CommutativeDiagramResult::DoesNotCommute(reason) => panic!("{}", reason),
 //! });
-//!``` 
-//! 
+//!```
+//!
 
 pub use crate::graph::CyclicGraphError;
 use crate::graph::{all_paths, DiGraph, Edge};
@@ -73,22 +73,30 @@ pub struct Set<T, P, F>
 where
     T: Clone + Element + Sized,
     P: Fn(&T) -> bool,
-    F: Fn(&T) -> bool
+    F: Fn(&T) -> bool,
 {
     elements: Vec<T>,
     property: P,
-    filter: F
+    filter: F,
 }
 
-
-impl<T> Set<T, fn(&T) -> bool, fn(&T) -> bool> where T: Clone + Element + Sized  {
-    pub fn new(elements: Vec<T>) -> Rc<Set<T, fn(&T) -> bool, fn(&T) -> bool>>{
-        Rc::new(Self{elements, property: |_x| true, filter: |_x| true})   
+impl<T> Set<T, fn(&T) -> bool, fn(&T) -> bool>
+where
+    T: Clone + Element + Sized,
+{
+    pub fn new(elements: Vec<T>) -> Rc<Set<T, fn(&T) -> bool, fn(&T) -> bool>> {
+        Rc::new(Self {
+            elements,
+            property: |_x| true,
+            filter: |_x| true,
+        })
     }
 
     pub fn new_no_generating_set() -> Rc<Set<T, fn(&T) -> bool, fn(&T) -> bool>> {
         Rc::new(Self {
-            elements: Vec::new(), property: |_x| true, filter: |_x| true
+            elements: Vec::new(),
+            property: |_x| true,
+            filter: |_x| true,
         })
     }
 }
@@ -96,53 +104,66 @@ impl<T> Set<T, fn(&T) -> bool, fn(&T) -> bool> where T: Clone + Element + Sized 
 impl<T, P> Set<T, P, fn(&T) -> bool>
 where
     T: Clone + Element + Sized,
-    P: Fn(&T) -> bool
+    P: Fn(&T) -> bool,
 {
-
     pub fn new_checked(elements: Vec<T>, property: P) -> Rc<Set<T, P, fn(&T) -> bool>> {
-        Rc::new(Self { elements, property, filter: |_x| true})
+        Rc::new(Self {
+            elements,
+            property,
+            filter: |_x| true,
+        })
     }
 
-    pub fn new_no_generating_set_checked(property: P) -> Rc<Set<T, P, fn(&T) -> bool >> {
+    pub fn new_no_generating_set_checked(property: P) -> Rc<Set<T, P, fn(&T) -> bool>> {
         Rc::new(Self {
-            elements: Vec::new(), property, filter: |_x| true
+            elements: Vec::new(),
+            property,
+            filter: |_x| true,
         })
     }
 }
-
 
 impl<T, F> Set<T, fn(&T) -> bool, F>
 where
     T: Clone + Element + Sized,
-    F: Fn(&T) -> bool
+    F: Fn(&T) -> bool,
 {
-
     pub fn new_filtered(elements: Vec<T>, filter: F) -> Rc<Set<T, fn(&T) -> bool, F>> {
-        Rc::new(Self { elements, property: |_x| true, filter})
+        Rc::new(Self {
+            elements,
+            property: |_x| true,
+            filter,
+        })
     }
 
     pub fn new_no_generating_set_filtered(filter: F) -> Rc<Set<T, fn(&T) -> bool, F>> {
         Rc::new(Self {
-            elements: Vec::new(), property: |_x| true, filter
+            elements: Vec::new(),
+            property: |_x| true,
+            filter,
         })
     }
 }
-
 
 impl<T, P, F> Set<T, P, F>
 where
     T: Clone + Element + Sized,
     P: Fn(&T) -> bool,
-    F: Fn(&T) -> bool
+    F: Fn(&T) -> bool,
 {
-
     pub fn new_checked_filtered(elements: Vec<T>, property: P, filter: F) -> Rc<Set<T, P, F>> {
-        Rc::new(Self { elements, property, filter})
+        Rc::new(Self {
+            elements,
+            property,
+            filter,
+        })
     }
 
     pub fn new_no_generating_set_checked_filtered(property: P, filter: F) -> Rc<Set<T, P, F>> {
         Rc::new(Self {
-            elements: Vec::new(), property, filter
+            elements: Vec::new(),
+            property,
+            filter,
         })
     }
 }
@@ -151,7 +172,7 @@ impl<T, P, F> SetLike for Set<T, P, F>
 where
     T: Clone + Element + Sized + 'static,
     P: Fn(&T) -> bool,
-    F: Fn(&T) -> bool
+    F: Fn(&T) -> bool,
 {
     fn elements(&self) -> Box<dyn Iterator<Item = Rc<dyn Element>>> {
         let owned_els = self.elements.clone();
@@ -161,7 +182,7 @@ where
                 .map(|e| Rc::new(e.clone()) as Rc<dyn Element>),
         )
     }
-    
+
     fn check(&self, element: &Rc<dyn Element>) -> bool {
         (self.property)(element.as_any().downcast_ref::<T>().unwrap())
     }
@@ -316,12 +337,15 @@ impl Diagram {
 #[derive(Clone, Debug)]
 pub enum CommutativeDiagramError {
     CyclicGraphError,
-    PropertyCheckError(String)
+    PropertyCheckError(String),
 }
 
-pub fn diagram_commutes(diagram: &Diagram) -> Result<CommutativeDiagramResult, CommutativeDiagramError> {
+pub fn diagram_commutes(
+    diagram: &Diagram,
+) -> Result<CommutativeDiagramResult, CommutativeDiagramError> {
     // Find all paths through the diagram
-    let all_possible_paths = all_paths(diagram).map_err(|_err| CommutativeDiagramError::CyclicGraphError)?;
+    let all_possible_paths =
+        all_paths(diagram).map_err(|_err| CommutativeDiagramError::CyclicGraphError)?;
 
     // For each pair of paths...
     for path_a in &all_possible_paths.clone() {
@@ -340,7 +364,6 @@ pub fn diagram_commutes(diagram: &Diagram) -> Result<CommutativeDiagramResult, C
                 // Now, map this source set through both of the paths
                 let source_elements = source_set.elements();
                 'outer: for element in source_elements {
-
                     // Check if this element should be filtered
                     if !source_set.filter(&element) {
                         continue 'outer; // Next!
@@ -348,7 +371,10 @@ pub fn diagram_commutes(diagram: &Diagram) -> Result<CommutativeDiagramResult, C
 
                     // Verify the element in the source set.
                     if !source_set.check(&element) {
-                        return Err(CommutativeDiagramError::PropertyCheckError(format!("Element does not satisfy source set property: {:?}", element.name().clone())));
+                        return Err(CommutativeDiagramError::PropertyCheckError(format!(
+                            "Element does not satisfy source set property: {:?}",
+                            element.name().clone()
+                        )));
                     }
 
                     let mut path_a_element = element.clone();
@@ -358,7 +384,7 @@ pub fn diagram_commutes(diagram: &Diagram) -> Result<CommutativeDiagramResult, C
                         let set = &diagram.sets[*edge.to()];
 
                         path_a_element = map.map(&path_a_element).unwrap();
-                        
+
                         // Check if this element/path should be filtered
                         if !set.filter(&path_a_element) {
                             continue 'outer;
@@ -366,7 +392,10 @@ pub fn diagram_commutes(diagram: &Diagram) -> Result<CommutativeDiagramResult, C
 
                         // Check if this element passes validation
                         if !set.check(&path_a_element) {
-                            return Err(CommutativeDiagramError::PropertyCheckError(format!("Element does not satisfy target set property: {:?}", path_a_element.name().clone())));
+                            return Err(CommutativeDiagramError::PropertyCheckError(format!(
+                                "Element does not satisfy target set property: {:?}",
+                                path_a_element.name().clone()
+                            )));
                         }
                     }
 
@@ -385,7 +414,10 @@ pub fn diagram_commutes(diagram: &Diagram) -> Result<CommutativeDiagramResult, C
 
                         // Check if this element passes validation
                         if !set.check(&path_b_element) {
-                            return Err(CommutativeDiagramError::PropertyCheckError(format!("Element does not satisfy target set property: {:?}", path_a_element.name().clone())));
+                            return Err(CommutativeDiagramError::PropertyCheckError(format!(
+                                "Element does not satisfy target set property: {:?}",
+                                path_a_element.name().clone()
+                            )));
                         }
                     }
 
@@ -474,8 +506,12 @@ mod tests {
         let diagram = Diagram {
             sets: vec![
                 Set::new(triplets),
-                Set::<(i32, i32), _, _>::new_no_generating_set_filtered(|(a, b): &(i32, i32)| a + b >= 6),
-                Set::<(i32, i32), _, _>::new_no_generating_set_filtered(|(a, b): &(i32, i32)| a + b >= 5),
+                Set::<(i32, i32), _, _>::new_no_generating_set_filtered(|(a, b): &(i32, i32)| {
+                    a + b >= 6
+                }),
+                Set::<(i32, i32), _, _>::new_no_generating_set_filtered(|(a, b): &(i32, i32)| {
+                    a + b >= 5
+                }),
                 Set::<i32, _, _>::new_no_generating_set_checked(|x: &i32| *x >= 5),
             ],
             maps: vec![
@@ -491,5 +527,4 @@ mod tests {
             CommutativeDiagramResult::DoesNotCommute(reason) => panic!("{}", reason),
         });
     }
-
 }
