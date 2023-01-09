@@ -342,7 +342,7 @@ pub fn diagram_commutes(diagram: &Diagram) -> Result<CommutativeDiagramResult, C
                 'outer: for element in source_elements {
 
                     // Check if this element should be filtered
-                    if source_set.filter(&element) {
+                    if !source_set.filter(&element) {
                         continue 'outer; // Next!
                     }
 
