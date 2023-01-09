@@ -474,7 +474,7 @@ mod tests {
         let diagram = Diagram {
             sets: vec![
                 Set::new(triplets),
-                Set::<(i32, i32), _, _>::new_no_generating_set(),
+                Set::<(i32, i32), _, _>::new_no_generating_set_filtered(|(a, b): &(i32, i32)| a + b >= 6),
                 Set::<(i32, i32), _, _>::new_no_generating_set_filtered(|(a, b): &(i32, i32)| a + b >= 5),
                 Set::<i32, _, _>::new_no_generating_set_checked(|x: &i32| *x >= 5),
             ],
