@@ -31,10 +31,10 @@ As an example, the following tests associativity on a given (subset of) the inte
          Set::<i32>::new_no_generating_set(),
      ],
      vec[
-         Map::new(0, 1, left_add, "(+,id)".to_owned()),
-         Map::new(0, 2, right_add, "(id,+)".to_owned()),
-         Map::new(2, 3, |(a, b): &(i32, i32)| a + b, "(+)".to_owned()),
-         Map::new(1, 3, |(a, b): &(i32, i32)| a + b, "(+)".to_owned()),
+         Map::new(0, 1, left_add, "(+,id)"),
+         Map::new(0, 2, right_add, "(id,+)"),
+         Map::new(2, 3, |(a, b): &(i32, i32)| a + b, "(+)"),
+         Map::new(1, 3, |(a, b): &(i32, i32)| a + b, "(+)"),
      ],
  );
 

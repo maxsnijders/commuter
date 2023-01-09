@@ -31,10 +31,10 @@
 //!         Set::<i32>::new_no_generating_set(),
 //!     ],
 //!     vec![
-//!         Map::new(0, 1, left_add, "(+,id)".to_owned()),
-//!         Map::new(0, 2, right_add, "(id,+)".to_owned()),
-//!         Map::new(2, 3, |(a, b): &(i32, i32)| a + b, "(+)".to_owned()),
-//!         Map::new(1, 3, |(a, b): &(i32, i32)| a + b, "(+)".to_owned()),
+//!         Map::new(0, 1, left_add, "(+,id)"),
+//!         Map::new(0, 2, right_add, "(id,+)"),
+//!         Map::new(2, 3, |(a, b): &(i32, i32)| a + b, "(+)"),
+//!         Map::new(1, 3, |(a, b): &(i32, i32)| a + b, "(+)"),
 //!     ],
 //! );
 //!
@@ -209,7 +209,7 @@ pub struct Map {
 }
 
 impl Map {
-    pub fn new<F, U, V>(from: usize, to: usize, map: F, name: String) -> Map
+    pub fn new<F, U, V>(from: usize, to: usize, map: F, name: &str) -> Map
     where
         F: Fn(&U) -> V + 'static + Clone,
         U: Clone + PartialEq + core::fmt::Debug + 'static,
@@ -219,7 +219,7 @@ impl Map {
             from: from,
             to: to,
             map: ValueMap::new(map.clone()),
-            name: name,
+            name: name.to_owned(),
         }
     }
 }
@@ -367,10 +367,10 @@ mod tests {
                 Set::<i32>::new_no_generating_set(),
             ],
             maps: vec![
-                Map::new(0, 1, left_add, "(+,id)".to_owned()),
-                Map::new(0, 2, right_add, "(id,+)".to_owned()),
-                Map::new(2, 3, |(a, b): &(i32, i32)| a + b, "(+)".to_owned()),
-                Map::new(1, 3, |(a, b): &(i32, i32)| a + b, "(+)".to_owned()),
+                Map::new(0, 1, left_add, "(+,id)"),
+                Map::new(0, 2, right_add, "(id,+)"),
+                Map::new(2, 3, |(a, b): &(i32, i32)| a + b, "(+)"),
+                Map::new(1, 3, |(a, b): &(i32, i32)| a + b, "(+)"),
             ],
         };
 
