@@ -39,7 +39,7 @@
 //! );
 //!
 //! assert!(match diagram_commutes(&diagram).unwrap() {
-//!     CommutativeDiagramResult::Commutes => true,
+//!     CommutativeDiagramResult::Commutes{ .. } => true,
 //!     CommutativeDiagramResult::DoesNotCommute(reason) => panic!("{}", reason),
 //! });
 //!```
@@ -324,7 +324,9 @@ pub struct Diagram {
 
 #[derive(Clone, Debug)]
 pub enum CommutativeDiagramResult {
-    Commutes,
+    Commutes {
+        checked_elements: Vec<usize>, // Set ix -> How many elements we encountered (not generated there) in this set. Includes intermediates and finals
+    },
     DoesNotCommute(String),
 }
 
@@ -347,9 +349,16 @@ pub fn diagram_commutes(
     let all_possible_paths =
         all_paths(diagram).map_err(|_err| CommutativeDiagramError::CyclicGraphError)?;
 
+    let mut checked_elements = vec![0; diagram.sets.len()];
+
     // For each pair of paths...
-    for path_a in &all_possible_paths.clone() {
-        for path_b in &all_possible_paths.clone() {
+    for (path_a_ix, path_a) in all_possible_paths.clone().iter().enumerate() {
+        for (path_b_ix, path_b) in all_possible_paths.clone().iter().enumerate() {
+            // No need to check pairs of paths both ways
+            if path_b_ix < path_a_ix {
+                continue;
+            }
+
             // Check if these two paths match
             if path_a.first().map(|e| e.from()) == path_b.first().map(|e| e.from())
                 && path_a.last().map(|e| e.to()) == path_b.last().map(|e| e.to())
@@ -385,6 +394,9 @@ pub fn diagram_commutes(
                         let map = &diagram.maps[edge.ix].map;
                         let set = &diagram.sets[*edge.to()];
 
+                        // Record that we found an element
+                        checked_elements[*edge.to()] += 1;
+
                         path_a_element = map.map(&path_a_element).unwrap();
                         a_names.push(path_a_element.name().clone());
 
@@ -407,6 +419,9 @@ pub fn diagram_commutes(
                     for edge in path_b {
                         let map = &diagram.maps[edge.ix].map;
                         let set = &diagram.sets[*edge.to()];
+
+                        // Record that we found an element
+                        checked_elements[*edge.to()] += 1;
 
                         path_b_element = map.map(&path_b_element).unwrap();
                         b_names.push(path_b_element.name().clone());
@@ -465,7 +480,7 @@ pub fn diagram_commutes(
         }
     }
 
-    Ok(CommutativeDiagramResult::Commutes)
+    Ok(CommutativeDiagramResult::Commutes { checked_elements })
 }
 
 impl<T> Element for T
@@ -485,7 +500,7 @@ where
     }
 
     fn name(&self) -> String {
-        format!("{:?}", self)
+        format!("{:#?}", self)
     }
 }
 
@@ -532,7 +547,7 @@ mod tests {
         };
 
         assert!(match diagram_commutes(&diagram).unwrap() {
-            CommutativeDiagramResult::Commutes => true,
+            CommutativeDiagramResult::Commutes { .. } => true,
             CommutativeDiagramResult::DoesNotCommute(reason) => panic!("{}", reason),
         });
     }
