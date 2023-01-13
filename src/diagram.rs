@@ -378,12 +378,15 @@ pub fn diagram_commutes(
                     }
 
                     let mut path_a_element = element.clone();
+                    let mut a_names: Vec<String> = Vec::new();
+                    let mut b_names: Vec<String> = Vec::new();
 
                     for edge in path_a {
                         let map = &diagram.maps[edge.ix].map;
                         let set = &diagram.sets[*edge.to()];
 
                         path_a_element = map.map(&path_a_element).unwrap();
+                        a_names.push(path_a_element.name().clone());
 
                         // Check if this element/path should be filtered
                         if !set.filter(&path_a_element) {
@@ -406,6 +409,7 @@ pub fn diagram_commutes(
                         let set = &diagram.sets[*edge.to()];
 
                         path_b_element = map.map(&path_b_element).unwrap();
+                        b_names.push(path_b_element.name().clone());
 
                         // Check if this element/path should be filtered
                         if !set.filter(&path_b_element) {
@@ -440,13 +444,18 @@ pub fn diagram_commutes(
                         let left_final_element_name = path_a_element.name();
                         let right_final_element_name = path_b_element.name();
 
+                        let left_element_names = a_names.join(" -> ");
+                        let right_element_names = b_names.join(" -> ");
+
                         let reason = format!(
-                            "{} and {} don't agree on {}. Left gets {} while right gets {}",
+                            "{} and {} don't agree on {}. Left gets {} while right gets {}. Intermediates left are {} and right are {}",
                             path_a_description,
                             path_b_description,
                             element_name,
                             left_final_element_name,
-                            right_final_element_name
+                            right_final_element_name,
+                            left_element_names,
+                            right_element_names
                         );
 
                         return Ok(CommutativeDiagramResult::DoesNotCommute(reason.to_owned()));
