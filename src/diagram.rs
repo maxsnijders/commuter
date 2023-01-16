@@ -407,9 +407,19 @@ pub fn diagram_commutes(
 
                         // Check if this element passes validation
                         if !set.check(&path_a_element) {
+                            let path_description = path_a
+                                .iter()
+                                .map(|edge| diagram.maps[edge.ix].name.clone())
+                                .collect::<Vec<String>>()
+                                .join(" -> ");
+                            let element_names = a_names.join(" -> ");
+
                             return Err(CommutativeDiagramError::PropertyCheckError(format!(
-                                "Element does not satisfy target set property: {:?}",
-                                path_a_element.name().clone()
+                                "Element does not satisfy target set property: {:?} along path {} with elements in between seen {}, starting from {}",
+                                path_a_element.name().clone(),
+                                path_description,
+                                element_names,
+                                element.name().clone()
                             )));
                         }
                     }
@@ -433,9 +443,19 @@ pub fn diagram_commutes(
 
                         // Check if this element passes validation
                         if !set.check(&path_b_element) {
+                            let path_description = path_b
+                                .iter()
+                                .map(|edge| diagram.maps[edge.ix].name.clone())
+                                .collect::<Vec<String>>()
+                                .join(" -> ");
+                            let element_names = b_names.join(" -> ");
+
                             return Err(CommutativeDiagramError::PropertyCheckError(format!(
-                                "Element does not satisfy target set property: {:?}",
-                                path_a_element.name().clone()
+                                "Element does not satisfy target set property: {:?} along path {} with elements in between seen {}, starting from {}",
+                                path_b_element.name().clone(),
+                                path_description,
+                                element_names,
+                                element.name().clone()
                             )));
                         }
                     }
