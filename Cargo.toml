@@ -1,8 +1,8 @@
 [package]
 name = "commuter"
-version = "0.1.0"
+version = "0.1.8"
 edition = "2021"
-license-file = "LICENSE"
+license = "MIT"
 description = "Provides tooling to test diagrams for commutativity, allowing automated tests on algebraic systems."
 readme = "README.md"
 keywords = ["commutative","diagrams","algebra","proofs","testing"]
@@ -11,4 +11,6 @@ repository = "https://github.com/maxsnijders/commuter"
 authors = ["Max Snijders"]
 
 [dependencies]
+dyn-clonable = "0.9.0"
+dyn-clone = "1.0.10"
 itertools = "0.10.5"
