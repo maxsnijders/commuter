@@ -66,7 +66,6 @@ where
 
     // Initiate the search from each vertex
     for initial_vertex in graph.nodes() {
-
         // Initiate the search from this vertex through each outbound
         for outbound in graph.outbounds(&initial_vertex) {
             paths.push(vec![outbound.clone()]);
